@@ -1,113 +1,114 @@
-TITLE    Write a program that inputs a matrix of the order of 3 x 3 and displays the matrix along with its transpose and diagonal elements.
+TITLE    Program to input a 3x3 matrix and display the matrix, its transpose and diagonal elements.
 .MODEL SMALL
 .STACK
 .DATA
-    input BYTE "Enter the elements of the matrix(3X3): ","$"
-    output BYTE "The matrix is: ","$"
-    diagonal BYTE "The diagonal elements are: ","$"
-    matrix    WORD 9 DUP(?)
-    transpose WORD 9 DUP(?)
+    inputMsg BYTE "Input the elements of the matrix(3X3): ","$"
+    outputMsg BYTE "The matrix is: ","$"
+    diagonalMsg BYTE "The diagonal elements are: ","$"
+    originalMatrix    WORD 9 DUP(?)
+    transposedMatrix WORD 9 DUP(?)
 
-    newline     BYTE 13,10,"$"
-    space       BYTE " ","$"
+    lineBreak     BYTE 13,10,"$"
+    spaceChar       BYTE " ","$"
 
-    end1 BYTE 13,10,"END OF PROGRAM","$"
+    endMsg BYTE 13,10,"PROGRAM TERMINATED","$"
 .CODE
-    DISPLAY PROC FAR
+    SHOW_MSG PROC FAR
         MOV DX,AX
         MOV AH,9
         INT 21h
         RET
-    DISPLAY ENDP
+    SHOW_MSG ENDP
 
-    GETCHAR PROC FAR
+    READ_CHAR PROC FAR
         MOV AH,1
         INT 21H
         RET
-    GETCHAR ENDP
+    READ_CHAR ENDP
 
-    PUTCHAR proc NEAR
+    WRITE_CHAR proc NEAR
         MOV DL,AL
         MOV AH,2
         INT 21h
         RET
-    PUTCHAR ENDP
+    WRITE_CHAR ENDP
 
-INDEC PROC FAR  ;inputs an unsigned decimal number from the keyboard to AX register
-                ;the number is entered as 1 or more digits, the input is terminated by a char other than 0-9
+READ_DEC PROC FAR  ;Procedure to input an unsigned decimal number from the keyboard to AX register
     PUSH BX
     PUSH CX
     PUSH DX
 
-    MOV CX,10   ;MULTIPLIER
+    MOV CX,10   ;Multiplier
 
-    XOR BX,BX   ;cLEAR NUMBER MEAN INITILIZE TO 0  (MOV BX,0  ADD BX,0   XOR BX,BX)
+    XOR BX,BX   ;Clear number i.e., initialize to 0
 
-    INDEC1: CALL GETCHAR  ;GET NEXT CHARACTER
-            CMP AL,'0'    ;LESS THAN 0
-            JB INDEC2     ;YES
-            CMP AL,'9'    ;GREATER THAN 9
-            JA INDEC2     ;YES
+    READ_LOOP: CALL READ_CHAR  ;Get next character
+            CMP AL,'0'    ;Less than 0
+            JB END_READ     ;Yes
+            CMP AL,'9'    ;Greater than 9
+            JA END_READ     ;Yes
 
-            SUB AL,'0'    ;GET DECIMAL digits
+            SUB AL,'0'    ;Get decimal digits
 
-            XOR AH,AH     ;WE WANT TO SAVE THE DIGIT IN STACK MUST BE OF 2BYTE
+            XOR AH,AH     ;We want to save the digit in stack, must be of 2 bytes
 
-            PUSH AX       ;SAVE THE DIGIT
+            PUSH AX       ;Save the digit
 
-            MOV AX,BX     ;DEC_MULTIPLICATION N BY 10
+            MOV AX,BX     ;Decimal multiplication by 10
 
             MUL CX
-            POP BX       ;RESTORE THE DIGIT
-            ADD BX,AX    ;ADD THE DIGIT TO THE NUMBER (PARTIAL RESULT)
-            JMP INDEC1   ;GET NEXT DIGIT
+            POP BX       ;Restore the digit
+            ADD BX,AX    ;Add the digit to the number (partial result)
+            JMP READ_LOOP   ;Get next digit
 
-    INDEC2: MOV AX,BX    ;RETURN N IN AX
+    END_READ: MOV AX,BX    ;Return number in AX
                             
             POP BX       ;Restore Registers
             POP CX
             POP DX
 
             RET
-INDEC ENDP      ;Return to Caller
+READ_DEC ENDP      ;Return to Caller
 
-OUTDEC PROC ;outputs an unsigned decimal number to the terminal, the number must be placed in the ax register.
+WRITE_DEC PROC ;Procedure to output an unsigned decimal number to the terminal, the number must be placed in the ax register.
     PUSH AX   ;save registers
     PUSH BX   
     PUSH CX
     PUSH DX
 
-    MOV CX,0   ;INITIALIZE DIGIT COUNT
-    MOV BX,10  ;SET UP DIVISOR
+    MOV CX,0   ;Initialize digit count
+    MOV BX,10  ;Set up divisor
 
-    OUT1:   XOR DX,DX ;MAKE ZERO HIGH ORDER WORD OF THE DIVIDEND
-        DIV BX        ;DIVIDE BY 10
-        PUSH DX       ;SAVE REMAINDER
-        INC CL        ;BUMP COUNT
-        CMP AX,0      ;ANYTHING LEFT?
+    WRITE_LOOP:   
+        XOR DX,DX ;Make zero high order word of the dividend
+        DIV BX        ;Divide by 10
+        PUSH DX       ;Save remainder
+        INC CL        ;Bump count
+        CMP AX,0      ;Anything left?
 
-        JA OUT1       ;IF YES, GET NEXT DIGIT
+        JA WRITE_LOOP       ;If yes, get next digit
 
-    OUT2:  POP AX     ;GET A DIGIT FROM THE STACK
-        ADD AL,'0'    ;CONVERT A DIGIT TO CHARACTER
-        CALL PUTCHAR  ;OUTPUT THE DIGIT
-        LOOP OUT2
-        POP DX      ;RESTORE THE REGISTERS
+    OUTPUT_LOOP:  
+        POP AX     ;Get a digit from the stack
+        ADD AL,'0'    ;Convert a digit to character
+        CALL WRITE_CHAR  ;Output the digit
+        LOOP OUTPUT_LOOP
+        POP DX      ;Restore the registers
         POP CX
         POP BX
         POP AX
         RET
 
-OUTDEC   ENDP    ;RETURN TO CALLER
+WRITE_DEC   ENDP    ;Return to Caller
 
 ; Procedure to input a 3x3 matrix
 ;condition is that offset must be in DI
 INPUT_MATRIX PROC
     MOV CX,9
-    MOV AX, OFFSET newline
-    CALL DISPLAY
+    MOV AX, OFFSET lineBreak
+    CALL SHOW_MSG
     INPUT_LOOP:
-        CALL INDEC
+        CALL READ_DEC
         MOV [DI],AX
         ADD DI,2
         LOOP INPUT_LOOP
@@ -116,7 +117,7 @@ INPUT_MATRIX ENDP
 
 ; Procedure to display a 3x3 matrix  
 ;condition is that offset must be in SI
-DISPLAY_MATRIX PROC
+SHOW_MATRIX PROC
     MOV CX,9
 
     DISPLAY_LOOP:
@@ -127,22 +128,22 @@ DISPLAY_MATRIX PROC
         CMP DX,0
         JE newline1
 
-        MOV AX, OFFSET space
-        CALL DISPLAY
+        MOV AX, OFFSET spaceChar
+        CALL SHOW_MSG
 
         MOV AX,[SI]
-        CALL OUTDEC
+        CALL WRITE_DEC
         ADD SI,2
         CMP CX,1
         JE A
         LOOP DISPLAY_LOOP
         
     newline1:
-        MOV AX, OFFSET newline
-        CALL DISPLAY
+        MOV AX, OFFSET lineBreak
+        CALL SHOW_MSG
 
         MOV AX,[SI]
-        CALL OUTDEC
+        CALL WRITE_DEC
         ADD SI,2
 
         CMP CX,1
@@ -150,14 +151,14 @@ DISPLAY_MATRIX PROC
         LOOP DISPLAY_LOOP
     A:
     RET
-DISPLAY_MATRIX ENDP
+SHOW_MATRIX ENDP
 
 ; Procedure to calculate and display transpose of a matrix
 TRANSPOSE_MATRIX PROC
     MOV CX, 3 ; Loop counter for rows
     MOV DX, 3 ; Loop counter for columns
-    MOV SI, OFFSET matrix ; SI points to the original matrix
-    MOV DI, OFFSET transpose ; DI points to the transpose matrix
+    MOV SI, OFFSET originalMatrix ; SI points to the original matrix
+    MOV DI, OFFSET transposedMatrix ; DI points to the transposed matrix
 
 TRANSPOSE_LOOP:
     PUSH DI ; Save DI
@@ -166,33 +167,32 @@ TRANSPOSE_LOOP:
 
 TRANSPOSE_INNER_LOOP:
     MOV AX, [SI] ; Load a number from the original matrix
-    MOV [DI], AX ; Store the number in the transpose matrix
+    MOV [DI], AX ; Store the number in the transposed matrix
     ADD SI, 2 ; Move to the next element in the original matrix
-    ADD DI, 6 ; Move to the next element in the transpose matrix (2 words for each element in a column)
+    ADD DI, 6 ; Move to the next element in the transposed matrix (2 words for each element in a column)
     LOOP TRANSPOSE_INNER_LOOP
 
     POP CX ; Restore row counter
-    ;ADD SI, 6 ; Move to the next row in the original matrix (2 words for each element in a row)
     POP DI ; Restore DI
-    ADD DI, 2 ; Move to the next column in the transpose matrix
+    ADD DI, 2 ; Move to the next column in the transposed matrix
     LOOP TRANSPOSE_LOOP
 
     RET
 TRANSPOSE_MATRIX ENDP
 
 ; Procedure to display diagonal elements of a matrix
-DISPLAY_DIAGONAL PROC
+SHOW_DIAGONAL PROC
     MOV CX, 3 ; Loop counter for diagonal elements
-    MOV SI, OFFSET matrix ; SI points to the matrix
-DISPLAY_DIAGONAL_LOOP:
+    MOV SI, OFFSET originalMatrix ; SI points to the matrix
+SHOW_DIAGONAL_LOOP:
     MOV AX, [SI] ; Load a diagonal element
-    CALL OUTDEC ; Output the diagonal element
+    CALL WRITE_DEC ; Output the diagonal element
     ADD SI, 8 ; Move to the next diagonal element
-    MOV AX, OFFSET space
-    CALL DISPLAY
-    LOOP DISPLAY_DIAGONAL_LOOP
+    MOV AX, OFFSET spaceChar
+    CALL SHOW_MSG
+    LOOP SHOW_DIAGONAL_LOOP
     RET
-DISPLAY_DIAGONAL ENDP
+SHOW_DIAGONAL ENDP
 
 MAIN PROC                ;ASSEMBLER DIRECTIVES
 
@@ -200,38 +200,38 @@ MAIN PROC                ;ASSEMBLER DIRECTIVES
     MOV DS, AX
 ;---------------------------------------------------
 
-    MOV AX, OFFSET input ; Display the input message
-    CALL DISPLAY
-    MOV DI, OFFSET matrix ; Set DI to point to matrix
+    MOV AX, OFFSET inputMsg ; Display the input message
+    CALL SHOW_MSG
+    MOV DI, OFFSET originalMatrix ; Set DI to point to matrix
     CALL INPUT_MATRIX ; Input the 3x3 matrix
 
 
-    MOV AX, OFFSET output ; Display the output message
-    CALL DISPLAY
-    MOV SI, OFFSET matrix ; SI points to the original matrix
-    CALL DISPLAY_MATRIX ; Display the original matrix
+    MOV AX, OFFSET outputMsg ; Display the output message
+    CALL SHOW_MSG
+    MOV SI, OFFSET originalMatrix ; SI points to the original matrix
+    CALL SHOW_MATRIX ; Display the original matrix
 
-    MOV AX, OFFSET newline
-    CALL DISPLAY
+    MOV AX, OFFSET lineBreak
+    CALL SHOW_MSG
 
 
-    MOV AX, OFFSET diagonal ; Display the diagonal message
-    CALL DISPLAY
+    MOV AX, OFFSET diagonalMsg ; Display the diagonal message
+    CALL SHOW_MSG
 
-    MOV AX, OFFSET newline
-    CALL DISPLAY
+    MOV AX, OFFSET lineBreak
+    CALL SHOW_MSG
     
-    CALL DISPLAY_DIAGONAL
+    CALL SHOW_DIAGONAL
 
-    MOV AX, OFFSET newline
-    CALL DISPLAY
+    MOV AX, OFFSET lineBreak
+    CALL SHOW_MSG
 
-    CALL TRANSPOSE_MATRIX ; Calculate and display the transpose matrix
-    MOV SI, OFFSET transpose ; SI points to the transpose matrix
-    CALL DISPLAY_MATRIX ; Display the transpose matrix
+    CALL TRANSPOSE_MATRIX ; Calculate and display the transposed matrix
+    MOV SI, OFFSET transposedMatrix ; SI points to the transposed matrix
+    CALL SHOW_MATRIX ; Display the transposed matrix
 
-    MOV AX, OFFSET END1 ; Display the end message
-    CALL DISPLAY
+    MOV AX, OFFSET endMsg ; Display the end message
+    CALL SHOW_MSG
 
 ;---------------------------------------------------
 
@@ -240,4 +240,3 @@ MAIN PROC                ;ASSEMBLER DIRECTIVES
 
 MAIN ENDP
 END MAIN
-

@@ -1,58 +1,58 @@
-TITLE   Write a program that inputs a number and displays all its divisors along with list of Fibnocii numbers less than or equal to it.
+TITLE   Program to input a number and display its divisors and Fibonacci numbers less than or equal to it.
 .MODEL SMALL
 .STACK
 .DATA
-    input_msg BYTE 13,10,"Input a number: $"
-    number    WORD ?
+    prompt_msg BYTE 13,10,"Enter a number: $"
+    num    WORD ?
 
     space     BYTE ' $'  ; space characters for formatting
     newline   BYTE 13,10,'$' ; newline characters for formatting
 
-    fibnocii_msg  BYTE 13,10,"Fibnocii numbers: ", 13,10,'$'
-    divisors_msg   BYTE 13,10,"Divisiors: ", 13,10,'$'
+    fibonacci_msg  BYTE 13,10,"Fibonacci numbers: ", 13,10,'$'
+    divisor_msg   BYTE 13,10,"Divisors: ", 13,10,'$'
 
-    fibnocii_array WORD 1,1,100 DUP(?)
-    divisors_array  WORD 100 DUP(?)  
+    fibonacci_array WORD 1,1,100 DUP(?)
+    divisor_array  WORD 100 DUP(?)  
 
-    fibnocii_count WORD 2
-    divisors_count  WORD 0
+    fibonacci_count WORD 2
+    divisor_count  WORD 0
 
 .CODE
-    DISPLAY PROC FAR
+    SHOW_MSG PROC FAR
         MOV DX,AX
         MOV AH,9
         INT 21h
         RET
-    DISPLAY ENDP
+    SHOW_MSG ENDP
 
-    GETCHAR PROC FAR
+    READ_CHAR PROC FAR
         MOV AH,1
         INT 21H
         RET
-    GETCHAR ENDP
+    READ_CHAR ENDP
 
-    PUTCHAR proc NEAR
+    WRITE_CHAR proc NEAR
         MOV DL,AL
         MOV AH,2
         INT 21h
         RET
-    PUTCHAR ENDP
+    WRITE_CHAR ENDP
 
-    INDEC PROC FAR  ;inputs an unsigned decimal number from the keyboard to AX register
-                    ;the number is entered as 1 or more digits, the input is terminated by a char other than 0-9
+    INPUT_NUM PROC FAR  ;inputs an unsigned decimal number from the keyboard to AX register
+                        ;the number is entered as 1 or more digits, the input is terminated by a char other than 0-9
         PUSH BX
         PUSH CX
         PUSH DX
 
         MOV CX,10   ;MULTIPLIER
 
-        XOR BX,BX   ;cLEAR NUMBER MEAN INITILIZE TO 0  (MOV BX,0  ADD BX,0   XOR BX,BX)
+        XOR BX,BX   ;CLEAR NUMBER MEAN INITILIZE TO 0  (MOV BX,0  ADD BX,0   XOR BX,BX)
 
-        INDEC1: CALL GETCHAR  ;GET NEXT CHARACTER
+        INPUT_LOOP: CALL READ_CHAR  ;GET NEXT CHARACTER
                 CMP AL,'0'    ;LESS THAN 0
-                JB INDEC2     ;YES
+                JB INPUT_END     ;YES
                 CMP AL,'9'    ;GREATER THAN 9
-                JA INDEC2     ;YES
+                JA INPUT_END     ;YES
 
                 SUB AL,'0'    ;GET DECIMAL digits
 
@@ -65,18 +65,18 @@ TITLE   Write a program that inputs a number and displays all its divisors along
                 MUL CX
                 POP BX       ;RESTORE THE DIGIT
                 ADD BX,AX    ;ADD THE DIGIT TO THE NUMBER (PARTIAL RESULT)
-                JMP INDEC1   ;GET NEXT DIGIT
+                JMP INPUT_LOOP   ;GET NEXT DIGIT
 
-        INDEC2: MOV AX,BX    ;RETURN N IN AX
+        INPUT_END: MOV AX,BX    ;RETURN N IN AX
                                 
                 POP BX       ;Restore Registers
                 POP CX
                 POP DX
 
                 RET
-    INDEC ENDP      ;Return to Caller
+    INPUT_NUM ENDP      ;Return to Caller
 
-    OUTDEC PROC ;outputs an unsigned decimal number to the terminal, the number must be placed in the ax register.
+    OUTPUT_NUM PROC ;outputs an unsigned decimal number to the terminal, the number must be placed in the ax register.
         PUSH AX   ;save registers
         PUSH BX   
         PUSH CX
@@ -85,25 +85,25 @@ TITLE   Write a program that inputs a number and displays all its divisors along
         MOV CX,0   ;INITIALIZE DIGIT COUNT
         MOV BX,10  ;SET UP DIVISOR
 
-        OUT1:   XOR DX,DX ;MAKE ZERO HIGH ORDER WORD OF THE DIVIDEND
+        OUT_LOOP1:   XOR DX,DX ;MAKE ZERO HIGH ORDER WORD OF THE DIVIDEND
             DIV BX        ;DIVIDE BY 10
             PUSH DX       ;SAVE REMAINDER
             INC CL        ;BUMP COUNT
             CMP AX,0      ;ANYTHING LEFT?
 
-            JA OUT1       ;IF YES, GET NEXT DIGIT
+            JA OUT_LOOP1       ;IF YES, GET NEXT DIGIT
 
-        OUT2:  POP AX     ;GET A DIGIT FROM THE STACK
+        OUT_LOOP2:  POP AX     ;GET A DIGIT FROM THE STACK
             ADD AL,'0'    ;CONVERT A DIGIT TO CHARACTER
-            CALL PUTCHAR  ;OUTPUT THE DIGIT
-            LOOP OUT2
+            CALL WRITE_CHAR  ;OUTPUT THE DIGIT
+            LOOP OUT_LOOP2
             POP DX      ;RESTORE THE REGISTERS
             POP CX
             POP BX
             POP AX
             RET
 
-    OUTDEC   ENDP    ;RETURN TO CALLER
+    OUTPUT_NUM   ENDP    ;RETURN TO CALLER
 
 MAIN PROC                ;ASSEMBLER DIRECTIVES
 
@@ -111,54 +111,54 @@ MAIN PROC                ;ASSEMBLER DIRECTIVES
     MOV DS, AX
 ;---------------------------------------------------
     ;Taking input
-    MOV AX, OFFSET input_msg
-    CALL DISPLAY
-    CALL INDEC
-    MOV number, AX
+    MOV AX, OFFSET prompt_msg
+    CALL SHOW_MSG
+    CALL INPUT_NUM
+    MOV num, AX
 
-    ;Finding fibnocii numbers
-    MOV SI, offset fibnocii_array
+    ;Finding Fibonacci numbers
+    MOV SI, offset fibonacci_array
     ADD SI, 4
 
-    L1:
+    FIB_LOOP:
         MOV AX, [SI-2]
         MOV BX, [SI-4]
         ADD AX, BX
 
-        CMP AX, number
-        JG NEXT
+        CMP AX, num
+        JG NEXT_STEP
 
         MOV [SI], AX
         ADD SI, 2
-        INC fibnocii_count
+        INC fibonacci_count
 
-        JMP L1
+        JMP FIB_LOOP
 
-    NEXT:
-    ;Showing fibnocii series
-    MOV AX, OFFSET fibnocii_msg
-    CALL DISPLAY
+    NEXT_STEP:
+    ;Showing Fibonacci series
+    MOV AX, OFFSET fibonacci_msg
+    CALL SHOW_MSG
 
-    MOV CX, fibnocii_count
-    MOV SI, offset fibnocii_array
-    LOOP1: 
+    MOV CX, fibonacci_count
+    MOV SI, offset fibonacci_array
+    FIB_DISPLAY_LOOP: 
         MOV AX, offset space
-        CALL DISPLAY
+        CALL SHOW_MSG
         MOV AX, [SI]
-        CALL OUTDEC
+        CALL OUTPUT_NUM
         INC SI
         INC SI
-        LOOP LOOP1
+        LOOP FIB_DISPLAY_LOOP
 
 
     ;Finding divisors
-    MOV SI, offset divisors_array
-    MOV CX, number
+    MOV SI, offset divisor_array
+    MOV CX, num
 
-    L2:
+    DIV_LOOP:
         XOR DX,DX
 
-        MOV AX, number
+        MOV AX, num
         MOV BX, CX
         DIV BX
         CMP DX, 0
@@ -166,24 +166,24 @@ MAIN PROC                ;ASSEMBLER DIRECTIVES
 
         MOV [SI], CX
         ADD SI, 2
-        INC divisors_count
+        INC divisor_count
 
         NOT_DIVISOR:
-            LOOP L2
+            LOOP DIV_LOOP
    
     EXIT:
     ;Showing divisors
-    MOV AX, OFFSET divisors_msg
-    CALL DISPLAY
-    MOV CX, divisors_count
-    MOV SI, offset divisors_array
-    LOOP2: 
+    MOV AX, OFFSET divisor_msg
+    CALL SHOW_MSG
+    MOV CX, divisor_count
+    MOV SI, offset divisor_array
+    DIV_DISPLAY_LOOP: 
         MOV AX, offset space
-        CALL DISPLAY
+        CALL SHOW_MSG
         MOV AX, [SI]
-        CALL OUTDEC
+        CALL OUTPUT_NUM
         ADD SI,2
-        LOOP LOOP2
+        LOOP DIV_DISPLAY_LOOP
 
 ;---------------------------------------------------
 
@@ -192,4 +192,3 @@ MAIN PROC                ;ASSEMBLER DIRECTIVES
 
 MAIN ENDP
 END MAIN
-
