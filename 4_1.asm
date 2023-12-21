@@ -1,62 +1,62 @@
-TITLE  input a list of 10 integers and  sorted list in ascending, descending order, sum and product.
+TITLE  Process a list of 10 integers: sort, sum and multiply.
 .8086
 .MODEL SMALL
 .STACK
 .DATA
    
-    input_msg   BYTE 13,10,"Input a list of 10 integers: $"
-    list        WORD 10 DUP(?)
+    prompt_msg   BYTE 13,10,"Enter a list of 10 integers: $"
+    num_list     WORD 10 DUP(?)
 
-    space     BYTE ' $'  ; space characters for formatting
-    newline   BYTE 13,10,'$' ; newline characters for formatting
+    space_char  BYTE ' $'  ; space for formatting
+    new_line    BYTE 13,10,'$' ; newline for formatting
 
-    ascending   BYTE 13,10,"The sorted list in ascending order: $"
+    asc_order   BYTE 13,10,"The sorted list in ascending order: $"
 
-    descending  BYTE 13,10,"The sorted list in descending order: $"
+    desc_order  BYTE 13,10,"The sorted list in descending order: $"
 
-    sum_msg     BYTE 13,10,"Sum of the list = $"
-    sum_ans     WORD 0d
-    prod_msg    BYTE 13,10,"Product of the list = $"
-    prod_ans    WORD 1d
+    sum_prompt  BYTE 13,10,"Sum of the list = $"
+    sum_result  WORD 0d
+    prod_prompt BYTE 13,10,"Product of the list = $"
+    prod_result WORD 1d
 
-    temp        WORD ?
+    temp_var    WORD ?
 
 .CODE
-    DISPLAY PROC FAR
+    SHOWMSG PROC FAR
         MOV DX,AX
         MOV AH,9
         INT 21h
         RET
-    DISPLAY ENDP
+    SHOWMSG ENDP
 
-    GETCHAR PROC FAR
+    READCHAR PROC FAR
         MOV AH,1
         INT 21H
         RET
-    GETCHAR ENDP
+    READCHAR ENDP
 
-    PUTCHAR proc NEAR
+    WRITECHAR proc NEAR
         MOV DL,AL
         MOV AH,2
         INT 21h
         RET
-    PUTCHAR ENDP
+    WRITECHAR ENDP
 
-    INDEC PROC FAR  ;inputs an unsigned decimal number from the keyboard to AX register
-                    ;the number is entered as 1 or more digits, the input is terminated by a char other than 0-9
+    READNUM PROC FAR  ;Reads an unsigned decimal number from the keyboard to AX register
+                      ;The number is entered as 1 or more digits, the input is terminated by a char other than 0-9
         PUSH BX
         PUSH CX
         PUSH DX
 
         MOV CX,10   ;MULTIPLIER
 
-        XOR BX,BX   ;cLEAR NUMBER MEAN INITILIZE TO 0  (MOV BX,0  ADD BX,0   XOR BX,BX)
+        XOR BX,BX   ;CLEAR NUMBER MEAN INITILIZE TO 0  (MOV BX,0  ADD BX,0   XOR BX,BX)
 
-        INDEC1: CALL GETCHAR  ;GET NEXT CHARACTER
+        READNUM1: CALL READCHAR  ;GET NEXT CHARACTER
                 CMP AL,'0'    ;LESS THAN 0
-                JB INDEC2     ;YES
+                JB READNUM2   ;YES
                 CMP AL,'9'    ;GREATER THAN 9
-                JA INDEC2     ;YES
+                JA READNUM2   ;YES
 
                 SUB AL,'0'    ;GET DECIMAL digits
 
@@ -69,18 +69,18 @@ TITLE  input a list of 10 integers and  sorted list in ascending, descending ord
                 MUL CX
                 POP BX       ;RESTORE THE DIGIT
                 ADD BX,AX    ;ADD THE DIGIT TO THE NUMBER (PARTIAL RESULT)
-                JMP INDEC1   ;GET NEXT DIGIT
+                JMP READNUM1  ;GET NEXT DIGIT
 
-        INDEC2: MOV AX,BX    ;RETURN N IN AX
+        READNUM2: MOV AX,BX    ;RETURN N IN AX
                                 
                 POP BX       ;Restore Registers
                 POP CX
                 POP DX
 
                 RET
-    INDEC ENDP      ;Return to Caller
+    READNUM ENDP      ;Return to Caller
 
-    OUTDEC PROC ;outputs an unsigned decimal number to the terminal, the number must be placed in the ax register.
+    WRITENUM PROC ;Outputs an unsigned decimal number to the terminal, the number must be placed in the ax register.
         PUSH AX   ;save registers
         PUSH BX   
         PUSH CX
@@ -89,25 +89,25 @@ TITLE  input a list of 10 integers and  sorted list in ascending, descending ord
         MOV CX,0   ;INITIALIZE DIGIT COUNT
         MOV BX,10  ;SET UP DIVISOR
 
-        OUT1:   XOR DX,DX ;MAKE ZERO HIGH ORDER WORD OF THE DIVIDEND
+        WRITE1:   XOR DX,DX ;MAKE ZERO HIGH ORDER WORD OF THE DIVIDEND
             DIV BX        ;DIVIDE BY 10
             PUSH DX       ;SAVE REMAINDER
             INC CL        ;BUMP COUNT
             CMP AX,0      ;ANYTHING LEFT?
 
-            JA OUT1       ;IF YES, GET NEXT DIGIT
+            JA WRITE1     ;IF YES, GET NEXT DIGIT
 
-        OUT2:  POP AX     ;GET A DIGIT FROM THE STACK
+        WRITE2:  POP AX     ;GET A DIGIT FROM THE STACK
             ADD AL,'0'    ;CONVERT A DIGIT TO CHARACTER
-            CALL PUTCHAR  ;OUTPUT THE DIGIT
-            LOOP OUT2
+            CALL WRITECHAR  ;OUTPUT THE DIGIT
+            LOOP WRITE2
             POP DX      ;RESTORE THE REGISTERS
             POP CX
             POP BX
             POP AX
             RET
 
-    OUTDEC   ENDP    ;RETURN TO CALLER
+    WRITENUM   ENDP    ;RETURN TO CALLER
 
 
 MAIN PROC                ;ASSEMBLER DIRECTIVES
@@ -117,119 +117,119 @@ MAIN PROC                ;ASSEMBLER DIRECTIVES
 ;---------------------------------------------------
 
     ;Taking input
-    MOV AX, OFFSET input_msg
-    CALL DISPLAY
-    MOV AX, OFFSET newline
-    CALL DISPLAY
+    MOV AX, OFFSET prompt_msg
+    CALL SHOWMSG
+    MOV AX, OFFSET new_line
+    CALL SHOWMSG
 
     MOV CX, 10
-    MOV SI, offset list
+    MOV SI, offset num_list
 
-    LOOP1: CALL INDEC
+    INPUT_LOOP: CALL READNUM
         MOV [SI], AX
         INC SI
         INC SI
-        LOOP LOOP1
+        LOOP INPUT_LOOP
 
 
     ;Calculating sum
     MOV CX, 10
-    MOV SI, offset list
-    LOOP2: MOV AX, [SI]
-        ADD sum_ans, AX
+    MOV SI, offset num_list
+    SUM_LOOP: MOV AX, [SI]
+        ADD sum_result, AX
         INC SI
         INC SI
-        LOOP LOOP2
+        LOOP SUM_LOOP
 
     ;Calculating product
     MOV CX, 10
-    MOV SI, offset list
-    LOOP3: MOV AX, [SI]
-        MOV BX, prod_ans
+    MOV SI, offset num_list
+    PROD_LOOP: MOV AX, [SI]
+        MOV BX, prod_result
         MUL BX
-        MOV prod_ans, AX
+        MOV prod_result, AX
         INC SI
         INC SI
-        LOOP LOOP3
+        LOOP PROD_LOOP
 
     ;sorting array
     MOV CX, 9
-    MOV SI, offset list
-    outer_loop:
+    MOV SI, offset num_list
+    OUTER_LOOP:
         MOV AX, [SI]
-        MOV temp, AX
-        MOV BX, temp
+        MOV temp_var, AX
+        MOV BX, temp_var
         MOV DI, SI
 
         PUSH CX
         PUSH SI
 
-       inner_loop: 
+       INNER_LOOP: 
             ADD SI, 2
             MOV AX, [SI]
-            CMP AX,temp
+            CMP AX,temp_var
             JA UPDATE
-            JMP A
+            JMP SKIP
 
             UPDATE: 
-                    MOV BX, temp
+                    MOV BX, temp_var
                     MOV [SI], BX
-                    MOV temp, AX
+                    MOV temp_var, AX
                     MOV [DI], AX
-            A:
+            SKIP:
                 CMP CX,0
-                JE B
-                LOOP inner_loop
-        B:
+                JE END_LOOP
+                LOOP INNER_LOOP
+        END_LOOP:
         POP SI
         POP CX
         ADD SI,2
-        LOOP outer_loop
+        LOOP OUTER_LOOP
 
     ;printing in ascending order
-    MOV AX, OFFSET descending
-    CALL DISPLAY
+    MOV AX, OFFSET desc_order
+    CALL SHOWMSG
     MOV CX, 10
-    MOV SI, offset list
+    MOV SI, offset num_list
 
-    LOOP4: 
-        MOV AX, OFFSET space
-        CALL DISPLAY
+    ASC_LOOP: 
+        MOV AX, OFFSET space_char
+        CALL SHOWMSG
 
         MOV AX, [SI]
-        CALL OUTDEC
+        CALL WRITENUM
 
         INC SI
         INC SI
-        LOOP LOOP4
+        LOOP ASC_LOOP
 
-    MOV AX, OFFSET ascending
-    CALL DISPLAY
+    MOV AX, OFFSET asc_order
+    CALL SHOWMSG
     MOV CX, 10
-    MOV SI, offset list
-    ADD SI, SIZEOF list
+    MOV SI, offset num_list
+    ADD SI, SIZEOF num_list
     SUB SI, 2
 
-    LOOP5: 
-        MOV AX, OFFSET space
-        CALL DISPLAY
+    DESC_LOOP: 
+        MOV AX, OFFSET space_char
+        CALL SHOWMSG
 
         MOV AX, [SI]
-        CALL OUTDEC
+        CALL WRITENUM
 
         DEC SI
         DEC SI
-        LOOP LOOP5
+        LOOP DESC_LOOP
 
-    MOV AX, OFFSET sum_msg
-    CALL DISPLAY
-    MOV AX, sum_ans
-    CALL OUTDEC
+    MOV AX, OFFSET sum_prompt
+    CALL SHOWMSG
+    MOV AX, sum_result
+    CALL WRITENUM
 
-    MOV AX, OFFSET prod_msg
-    CALL DISPLAY
-    MOV AX, prod_ans
-    CALL OUTDEC
+    MOV AX, OFFSET prod_prompt
+    CALL SHOWMSG
+    MOV AX, prod_result
+    CALL WRITENUM
 
 ;---------------------------------------------------
 
@@ -238,4 +238,3 @@ MAIN PROC                ;ASSEMBLER DIRECTIVES
 
 MAIN ENDP
 END MAIN
-
